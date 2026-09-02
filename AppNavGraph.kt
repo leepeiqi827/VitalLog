@@ -31,6 +31,7 @@ import com.example.vitallog.screen.CaloriesDashboardScreen
 import com.example.vitallog.screen.HomeScreen
 import com.example.vitallog.screen.MeditationScreen
 import com.example.vitallog.screen.MoodTrackScreen
+import com.example.vitallog.screen.SettingScreen
 import com.example.vitallog.screen.WorkoutScreen
 
 
@@ -147,6 +148,9 @@ fun AppNavGraph(modifier: Modifier = Modifier){
             }
             composable("meditation"){
                 MeditationScreen()
+            }
+            composable("settings") {
+                SettingScreen(navController)
             }
         }
 
