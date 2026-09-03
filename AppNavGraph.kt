@@ -1,39 +1,27 @@
 package com.example.vitallog.nav
 
-import android.R.attr.bottom
-import android.R.attr.contentDescription
-import android.R.attr.label
-import android.net.http.SslCertificate.saveState
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mood
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.vitallog.screen.CaloriesDashboardScreen
-import com.example.vitallog.screen.HomeScreen
-import com.example.vitallog.screen.MeditationScreen
-import com.example.vitallog.screen.MoodTrackScreen
-import com.example.vitallog.screen.SettingScreen
-import com.example.vitallog.screen.WorkoutScreen
-
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.vitallog.screen.*
 
 @Composable
 fun AppNavGraph(modifier: Modifier = Modifier){
@@ -81,7 +69,7 @@ fun AppNavGraph(modifier: Modifier = Modifier){
                             Icon(
                                 imageVector = Icons.Filled.FitnessCenter,
                                 contentDescription = "Workout",
-                                modifier = Modifier.padding(bottom = 15.dp)
+                                modifier = Modifier.padding(bottom = 12.dp)
                             )
                         },
                         label = { Text("Workout") },
@@ -152,7 +140,12 @@ fun AppNavGraph(modifier: Modifier = Modifier){
             composable("settings") {
                 SettingScreen(navController)
             }
+            composable("logsheet"){
+                LogsScreen(navController)
+            }
+            composable("calories_history"){
+                CaloriesHistoryScreen(navController)
+            }
         }
-
     }
 }

@@ -1,47 +1,15 @@
 package com.example.vitallog.screen
 
-import android.R.attr.fontWeight
-import android.R.attr.singleLine
-import android.R.attr.text
-import android.R.attr.textSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +17,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -58,30 +25,61 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.vitallog.data.DataManager
+import androidx.navigation.compose.rememberNavController
 import com.example.vitallog.ui.theme.VitalLogTheme
+import com.example.vitallog.viewmodel.CaloriesViewModel
+import com.example.vitallog.viewmodel.CaloriesViewModelFactory
 
 @Composable
-fun CaloriesDashboardScreen(navController: NavController){
+fun CaloriesDashboardScreen(
+    navController: NavController,
+    vm: CaloriesViewModel = viewModel(
+        factory = CaloriesViewModelFactory(LocalContext.current))
+) {
 
-    var target by remember { mutableStateOf(DataManager.getTarget()) }
-    var burned by remember { mutableStateOf(DataManager.getBurnedCalories()) }
-    var showDialog by remember { mutableStateOf(false) }
-    var isEditing by remember { mutableStateOf(false) }
-
-    val weeklyData = listOf(2191,1488,2586,3460,1473,2430,4000)
-    val weeklyLabels = listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
-
-    fun refresh(){
-        target = DataManager.getTarget()
-        burned = DataManager.getBurnedCalories()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                vm.loadTodayData()
+                vm.loadWeeklyData()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val progress = if (target != null && target!! > 0){
-        (burned.toFloat() / target!! * 100).toInt().coerceAtMost(100)
-    } else 0
+    val target by vm.target.collectAsStateWithLifecycle()
+    val burned by vm.burned.collectAsStateWithLifecycle()
+    val showDialog by vm.showDialog.collectAsStateWithLifecycle()
+    val isEditing by vm.isEditing.collectAsStateWithLifecycle()
+    val dialogInput by vm.dialogInput.collectAsStateWithLifecycle()
+    val isLoading by vm.isLoading.collectAsStateWithLifecycle()
+    val weeklyData by vm.weeklyData.collectAsStateWithLifecycle()
+    val weeklyLabels by vm.weeklyLabels.collectAsStateWithLifecycle()
+    val weeklyTotal by vm.weeklyTotal.collectAsStateWithLifecycle()
 
+    val progress = vm.getProgress()
+    val displayData = if(weeklyData.isNotEmpty()) weeklyData else listOf(2191,1488,2586,3460,1473,2430,4000)
+    val displayLabels = if(weeklyLabels.isNotEmpty()) weeklyLabels else listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+    val displayTotal = if(weeklyTotal > 0) weeklyTotal else displayData.sum()
+
+    if(isLoading){
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ){
+            CircularProgressIndicator()
+        }
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -138,14 +136,14 @@ fun CaloriesDashboardScreen(navController: NavController){
                 Spacer(Modifier.height(16.dp))
 
                 BarChart(
-                    data = weeklyData,
-                    labels = weeklyLabels,
+                    data = displayData,
+                    labels = displayLabels,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Text(
-                    text = "Total: 17611 kcal",
+                    text = "Total: $displayTotal kcal",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
@@ -197,7 +195,7 @@ fun CaloriesDashboardScreen(navController: NavController){
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)){
                         Button(
-                            onClick = { isEditing = true ; showDialog = true}
+                            onClick = { vm.showDialog(true)}
                         ){
                             Text(
                                 text = "Edit",
@@ -205,7 +203,7 @@ fun CaloriesDashboardScreen(navController: NavController){
                             )
                         }
                         Button(
-                            onClick = { DataManager.resetTarget() ; refresh() },
+                            onClick = { vm.resetTarget() },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error
                             )
@@ -224,7 +222,7 @@ fun CaloriesDashboardScreen(navController: NavController){
                     )
                     Spacer(Modifier.height(8.dp))
                     Button(
-                        onClick = { isEditing = true ; showDialog = true},
+                        onClick = { vm.showDialog(false)},
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.onPrimary
                         )
@@ -310,6 +308,19 @@ fun CaloriesDashboardScreen(navController: NavController){
             Text(
                 text = "View History",
                 fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        }
+        Button(
+            onClick = { vm.syncFromCloud() },
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary),
+            modifier = Modifier.fillMaxWidth()
+        ){
+            Text(
+                text = "Sync From Cloud",
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
         }
@@ -318,12 +329,10 @@ fun CaloriesDashboardScreen(navController: NavController){
     if(showDialog){
         CaloriesTargetDialog(
             existingTarget = if (isEditing) target else null,
-            onSave = { cal ->
-                DataManager.setTarget(cal)
-                showDialog = false
-                refresh()
-            },
-            onDismiss = { showDialog = false }
+            input = dialogInput,
+            onInputChange = { vm.updateDialogInput(it)},
+            onSave = {vm.setTarget(it)},
+            onDismiss = {vm.hideDialog()}
         )
     }
 }
@@ -372,10 +381,11 @@ fun BarChart(
                             setColor(android.graphics.Color.BLACK)
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
+                        val labelY = (size.height - barHeight - 6f).coerceAtLeast(paint.textSize)
                         drawText(
                             value.toString(),
                             size.width / 2,
-                            size.height - barHeight - 6f,
+                            labelY,
                             paint
                         )
                     }
@@ -394,10 +404,11 @@ fun BarChart(
 @Composable
 fun CaloriesTargetDialog(
     existingTarget: Int?,
+    input: String,
+    onInputChange: (String) -> Unit,
     onSave: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var input by remember { mutableStateOf(existingTarget?.toString() ?: "") }
     var error by remember { mutableStateOf<String?>(null) }
 
     Dialog(onDismissRequest = onDismiss){
@@ -405,17 +416,22 @@ fun CaloriesTargetDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.White)
+                .padding(24.dp)
         ){
-            Column(modifier = Modifier.padding(24.dp)){
+            Column(modifier = Modifier.background(Color.White)){
                 Text(
                     if (existingTarget == null) "Set Target"
                     else "Edit Target",
-                    fontSize = 20.sp
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = input,
-                    onValueChange = {input = it},
+                    onValueChange = {onInputChange(it)},
                     label = { Text("Calories",color = Color.Black)},
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color.Black,
@@ -444,13 +460,22 @@ fun CaloriesTargetDialog(
                     modifier = Modifier.fillMaxWidth()
                 ){
                     TextButton(
+                        onClick = onDismiss
+                    ){
+                        Text(
+                            text = "Cancel",
+                            color = Color.Gray
+                        )
+                    }
+                    TextButton(
                         onClick = {
                             val cal = input.toIntOrNull()
                             if (cal != null && cal in 500 .. 10000)
                                 onSave(cal)
                             else
                                 error = "Enter 500-10000"
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary)
                     ){
                         Text(
                             text = "Save",
@@ -466,9 +491,8 @@ fun CaloriesTargetDialog(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewScreen(){
-    VitalLogTheme() {
-        CaloriesDashboardScreen(navController = NavController(LocalContext.current))
+fun CaloriesDashboardScreenPreview() {
+    VitalLogTheme {
+        CaloriesDashboardScreen(rememberNavController())
     }
-
 }
