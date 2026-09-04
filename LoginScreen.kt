@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -30,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -140,7 +142,7 @@ fun LoginScreen(navController: NavHostController) {
         // 4. Login Button (Disabled if form is invalid)
         Button(
             onClick = {
-                navController.navigate("home") {
+                navController.navigate("home/$name") {
                     popUpTo("login") { inclusive = true }
                 }
             },
@@ -154,23 +156,67 @@ fun LoginScreen(navController: NavHostController) {
 
 @Composable
 fun ForgetPswd(navController: NavHostController) {
+    var name by remember { mutableStateOf("") }
     var gmail by remember { mutableStateOf("") }
+    val isNameValid = name.matches(Regex("^[a-zA-Z]+$"))
+
+    // 1. Email Validation Regex (checks for standard email format like example@gmail.com)
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    val isEmailValid = gmail.matches(Regex(emailRegex))
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFDEF6DA)) // Kept consistent with your other screens
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Forget Password?")
+        Text(
+            text = "Forgot Password?",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
+        TextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(text = "Username") },
+            isError = name.isNotEmpty() && !isNameValid, // Shows red border if invalid
+            supportingText = {
+                if (name.isNotEmpty() && !isNameValid) {
+                    Text(text = "Name can only contain letters", color = Color.Red)
+                }
+            },
+            modifier = Modifier.padding(16.dp).width(250.dp)
+        )
+        // 2. Email TextField with Validation
         TextField(
             value = gmail,
             onValueChange = { gmail = it },
-            label = { Text(text = "Gmail") }
+            label = { Text(text = "Gmail") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), // Shows '@' on keyboard
+            isError = gmail.isNotEmpty() && !isEmailValid, // Turns border red if invalid
+            supportingText = {
+                if (gmail.isNotEmpty() && !isEmailValid) {
+                    Text(
+                        text = "Please enter a valid email address",
+                        color = Color.Red
+                    )
+                }
+            },
+            modifier = Modifier
+                .padding(16.dp)
+                .width(250.dp) // Matched width with your Login screen for consistency
         )
 
+        // 3. Send Button (Disabled until email is valid)
         Button(
-            onClick = { navController.popBackStack() },
+            onClick = {
+                // Add your actual password reset logic here
+                navController.navigate("home/$name")
+            },
+            enabled = isEmailValid, // <-- Button is grayed out and unclickable until valid
             modifier = Modifier.padding(16.dp)
         ) {
             Text(text = "Send")
