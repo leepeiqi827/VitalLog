@@ -11,7 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -64,6 +69,15 @@ fun LoginScreen(navController: NavHostController) {
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // 1. Validation Logic
+    // Regex "^[a-zA-Z]+$" ensures ONLY letters are allowed.
+    // (Change to "^[a-zA-Z\\s]+$" if you want to allow spaces like "John Doe")
+    val isNameValid = name.matches(Regex("^[a-zA-Z]+$"))
+    val isPasswordValid = password.length in 8..16
+
+    // Form is only valid if BOTH conditions are met (and fields are not empty)
+    val isFormValid = isNameValid && isPasswordValid
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,13 +94,21 @@ fun LoginScreen(navController: NavHostController) {
             modifier = Modifier.size(160.dp)
         )
 
+        // 2. Username TextField with Validation
         TextField(
             value = name,
             onValueChange = { name = it },
             label = { Text(text = "Username") },
-            modifier = Modifier.padding(16.dp)
+            isError = name.isNotEmpty() && !isNameValid, // Shows red border if invalid
+            supportingText = {
+                if (name.isNotEmpty() && !isNameValid) {
+                    Text(text = "Name can only contain letters", color = Color.Red)
+                }
+            },
+            modifier = Modifier.padding(16.dp).width(250.dp)
         )
 
+        // 3. Password TextField with Validation
         TextField(
             value = password,
             onValueChange = { password = it },
@@ -94,26 +116,36 @@ fun LoginScreen(navController: NavHostController) {
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Text(if (passwordVisible) "Hide" else "Show")
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                    )
                 }
             },
-            modifier = Modifier.padding(16.dp)
+            isError = password.isNotEmpty() && !isPasswordValid, // Shows red border if invalid
+            supportingText = {
+                if (password.isNotEmpty() && !isPasswordValid) {
+                    Text(text = "Password must be 8 to 16 characters", color = Color.Red)
+                }
+            },
+            modifier = Modifier.width(250.dp)
         )
 
         Text(
             text = "Forgot Password?",
-            modifier = Modifier.padding(16.dp).clickable { navController.navigate("forget") },
+            modifier = Modifier.clickable { navController.navigate("forget") },
             color = Color.Red
         )
 
+        // 4. Login Button (Disabled if form is invalid)
         Button(
             onClick = {
-
                 navController.navigate("home") {
                     popUpTo("login") { inclusive = true }
                 }
             },
-            modifier = Modifier.padding(16.dp)
+            enabled = isFormValid, // <-- Button is grayed out and unclickable until valid
+            modifier = Modifier.padding(10.dp)
         ) {
             Text(text = "Login")
         }
@@ -125,7 +157,7 @@ fun ForgetPswd(navController: NavHostController) {
     var gmail by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
