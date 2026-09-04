@@ -37,7 +37,7 @@ fun CalendarScreen(navController: NavController) {
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     val today = remember { LocalDate.now() }
 
-    //read directly from the shared LoginData source
+    // LoginData.loginDates is now a SnapshotStateSet which Compose can observe directly
     val loggedDates = LoginData.loginDates
 
     val calendarDays by remember(currentMonth, loggedDates) {
@@ -217,3 +217,4 @@ data class CalendarDay(
     val date: LocalDate?,
     val status: DayStatus
 )
+
