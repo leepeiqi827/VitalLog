@@ -94,7 +94,7 @@ fun CaloriesHistoryScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "${entry.burned} / ${entry.target} kcal (${entry.progress.toInt()}%",
+                                    text = "${entry.burned} / ${entry.target} kcal (${entry.progress.toInt()}%)",
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
