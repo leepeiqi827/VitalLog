@@ -75,6 +75,43 @@ class CaloriesRepository(private val context: Context) {
         }
     }
 
+    // Adds calories burned from a newly logged workout onto that day's running total,
+    // creating the day's entry if it doesn't exist yet (target stays whatever it was, or 0).
+    suspend fun addBurnedCalories(date: String, additionalCalories: Int) {
+        val userId = getUserId()
+        val existing = dao.getByDate(userId, date)
+        val newBurned = (existing?.burned ?: 0) + additionalCalories
+        val target = existing?.target ?: 0
+        val progress = if (target > 0) (newBurned.toFloat() / target * 100) else 0f
+
+        val entry = CaloriesEntity(
+            userId = userId,
+            date = date,
+            burned = newBurned,
+            target = target,
+            progress = progress
+        )
+        saveToCloud(entry)
+    }
+
+    // Subtracts calories from a day's running total when a workout log is deleted
+    suspend fun subtractBurnedCalories(date: String, caloriesToRemove: Int){
+        val userId = getUserId()
+        val existing = dao.getByDate(userId, date) ?: return // nothing to subtract from
+        val newBurned = (existing.burned - caloriesToRemove).coerceAtLeast(0)
+        val target = existing.target
+        val progress = if (target>0)(newBurned.toFloat()/target*100) else 0f
+
+        val entry = CaloriesEntity(
+            userId = userId,
+            date = date,
+            burned = newBurned,
+            target = target,
+            progress = progress
+        )
+        saveToCloud(entry)
+    }
+
     suspend fun deleteFromCloud(date: String) {
         val userId = getUserId()
         dao.deleteByDate(userId, date)

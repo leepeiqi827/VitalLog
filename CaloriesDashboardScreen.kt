@@ -3,6 +3,8 @@ package com.example.vitallog.screen
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -49,6 +51,7 @@ fun CaloriesDashboardScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 vm.loadTodayData()
                 vm.loadWeeklyData()
+                vm.loadTodaysActivityLogs()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -64,6 +67,7 @@ fun CaloriesDashboardScreen(
     val weeklyData by vm.weeklyData.collectAsStateWithLifecycle()
     val weeklyLabels by vm.weeklyLabels.collectAsStateWithLifecycle()
     val weeklyTotal by vm.weeklyTotal.collectAsStateWithLifecycle()
+    val todaysActivityLogs by vm.todaysActivityLogs.collectAsStateWithLifecycle()
 
     val progress = vm.getProgress()
     val displayData = if(weeklyData.isNotEmpty()) weeklyData else listOf(2191,1488,2586,3460,1473,2430,4000)
@@ -100,7 +104,8 @@ fun CaloriesDashboardScreen(
             ){
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
+                    modifier = Modifier.size(30.dp)
                 )
             }
             Spacer(Modifier.width(20.dp))
@@ -152,7 +157,7 @@ fun CaloriesDashboardScreen(
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
 
         //Card 2: Target
         Card(
@@ -236,7 +241,7 @@ fun CaloriesDashboardScreen(
                 }
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
 
         //Card 3: Calories Source
         Card(
@@ -261,39 +266,62 @@ fun CaloriesDashboardScreen(
                 HorizontalDivider()
                 Spacer(Modifier.height(4.dp))
 
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                ){
+                if (todaysActivityLogs.isEmpty()) {
                     Text(
-                        text = "Work Out (48 min)",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        text = "No workouts logged today yet.",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 8.dp)
                     )
-                    Text(
-                        text = "850 calories",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ){
-                    Text(
-                        text = "Active Time",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                    Text(
-                        text = "238 calories",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
+                } else {
+                    // Capped + independently scrollable so a long log list can't push
+                    // the Total row and the buttons below off-screen.
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(todaysActivityLogs) { log ->
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "${log.workoutType} (${log.durationMinutes} min)",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = "${log.caloriesBurned} calories",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
+                    HorizontalDivider()
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    ) {
+                        Text(
+                            text = "Total (${todaysActivityLogs.sumOf { it.durationMinutes }} min)",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            text = "${todaysActivityLogs.sumOf { it.caloriesBurned }} calories",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
                 }
             }
         }
@@ -302,12 +330,11 @@ fun CaloriesDashboardScreen(
         Button(
             onClick = { navController.navigate("calories_history") },
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = Color(0xFF68B17B)
             )
         ) {
             Text(
-                text = "View History",
-                fontWeight = FontWeight.Bold,
+                text = "View Target History",
                 color = Color.Black,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
@@ -320,7 +347,6 @@ fun CaloriesDashboardScreen(
         ){
             Text(
                 text = "Sync From Cloud",
-                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
         }
@@ -368,7 +394,12 @@ fun BarChart(
                         .fillMaxHeight(0.8f)
                         .width(28.dp)
                 ){
-                    val barHeight = size.height * heightRatio
+                    // Reserve space at the top for the value label so that even the
+                    // tallest bar (heightRatio == 1) leaves room for it above the bar
+                    // instead of the label being drawn inside the bar.
+                    val labelReserve = 34f
+                    val barAreaHeight = (size.height - labelReserve).coerceAtLeast(0f)
+                    val barHeight = barAreaHeight * heightRatio
                     drawRoundRect(
                         color = color,
                         topLeft = Offset(0f,size.height - barHeight),
@@ -381,7 +412,7 @@ fun BarChart(
                             setColor(android.graphics.Color.BLACK)
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
-                        val labelY = (size.height - barHeight - 6f).coerceAtLeast(paint.textSize)
+                        val labelY = size.height - barHeight - 6f
                         drawText(
                             value.toString(),
                             size.width / 2,

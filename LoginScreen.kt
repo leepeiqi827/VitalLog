@@ -50,7 +50,7 @@ fun FirstScreens(navController: NavHostController) {
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.images),
+            painter = painterResource(id = R.drawable.logo),
             contentDescription = "heard",
             modifier = Modifier.size(160.dp)
         )

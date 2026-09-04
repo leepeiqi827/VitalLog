@@ -48,35 +48,35 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 
 
 @Composable
 fun SettingsScreen(
-    navController: NavController,
     userName: String = "User Info",
-    userEmail: String = "sarah@gmail.com"
+    userEmail: String = "sarah@gmail.com",
+    onBack: () -> Unit,
+    onAccountSecurity: () -> Unit,
+    onHelpSupport: () -> Unit,
+    onMoodHistory: () -> Unit,
+    onCalendar: () -> Unit,
+    onLogOut: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-
-        // Green header section — now wraps BOTH rows
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF4FBF6))) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Color(0xFFB9E4C9),
+                    Color(0xFFC6E9BE),
                     shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                 )
-                .padding(16.dp)
+                .padding(25.dp,vertical = 35.dp)
         ) {
-            // Back button + title row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = {navController.popBackStack()}) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(30.dp))
                 }
                 Text(
                     text = "Settings",
@@ -88,7 +88,6 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.width(48.dp))
             }
 
-            // Avatar + user info row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -96,12 +95,10 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.baseline_person_pin_24),
+                    painter = painterResource(id = R.drawable.user),
                     contentDescription = "Profile Picture",
                     modifier = Modifier
-                        .size(62.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF2E7D5B))
+                        .size(105.dp)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
@@ -112,10 +109,10 @@ fun SettingsScreen(
         }
 
         // Settings List
-        SettingsRow(icon = Icons.Default.Lock, label = "Account Security", onClick = {})
-        SettingsRow(icon = Icons.Default.Info, label = "Help & Support", onClick = {})
-        SettingsRow(icon = Icons.Default.Face, label = "Mood History", onClick = {})
-        SettingsRow(icon = Icons.Default.DateRange, label = "Calendar", onClick = {})
+        SettingsRow(icon = Icons.Default.Lock, label = "Account Security", onClick = onAccountSecurity)
+        SettingsRow(icon = Icons.Default.Info, label = "Help & Support", onClick = onHelpSupport)
+        SettingsRow(icon = Icons.Default.Face, label = "Mood History", onClick = onMoodHistory)
+        SettingsRow(icon = Icons.Default.DateRange, label = "Calendar", onClick = onCalendar)
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -124,13 +121,13 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp)
-                .clickable { navController.navigate("home") {popUpTo(navController.graph.id) { inclusive = true } }},
+                .clickable { onLogOut() },
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Log Out", color = Color(0xFF2E7D5B), fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color(0xFF2E7D5B))
+            Text("Log Out", color = Color(0xFF2E7D5B), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color(0xFF2E7D5B), modifier = Modifier.size(30.dp))
         }
     }
 }
@@ -144,10 +141,10 @@ fun SettingsRow(icon: ImageVector, label: String, onClick: () -> Unit){
         .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically)
     {
-        Icon(icon, contentDescription = null)
+        Icon(icon, contentDescription = null,modifier = Modifier.size(30.dp))
         Spacer(modifier = Modifier.width(16.dp))
         Text(text = label, modifier = Modifier.weight(1f), fontSize = 16.sp)
-        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
+        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, modifier = Modifier.size(30.dp))
     }
 }
 
@@ -155,6 +152,11 @@ fun SettingsRow(icon: ImageVector, label: String, onClick: () -> Unit){
 @Composable
 fun SettingsPreview(){
     SettingsScreen(
-        navController = NavController(LocalContext.current)
+        onBack = {},
+        onAccountSecurity = {},
+        onHelpSupport = {},
+        onMoodHistory = {},
+        onCalendar = {},
+        onLogOut = {}
     )
 }

@@ -1,5 +1,6 @@
 package com.example.vitallog.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import com.example.vitallog.R
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,7 +60,7 @@ data class DayItem(
     val dayNumber: String,
     val status: DayStatus
 )
-enum class HomeDayStatus { MISSED, COMPLETED, TODAY, UPCOMING }
+enum class DayStatus { MISSED, LOGGED, TODAY, UPCOMING }
 
 data class DailyTaskDef(val workoutType: String, val targetMinutes: Int) {
     val label: String get() = "$workoutType • $targetMinutes mins"
@@ -75,7 +78,6 @@ private val allTaskDefs = listOf(
 @Composable
 fun HomeScreen(navController: NavController,name: String?) {
 
-    val lightBg = Color(0xFFE8F5E9)
     val darkGreen = Color(0xFF2E7D32)
     val cardBg = Color(0xFFC8E6C9)
     val missedGrey = Color(0xFFA0AAB2)
@@ -136,7 +138,7 @@ fun HomeScreen(navController: NavController,name: String?) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.primary)
-            .padding(24.dp)
+            .padding(24.dp,vertical = 35.dp)
     ){
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -144,24 +146,20 @@ fun HomeScreen(navController: NavController,name: String?) {
             verticalAlignment = Alignment.CenterVertically
         ){
             Text(
-                text = "Good morning,$name",
+                text = "Good morning, \n$name!",
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            IconButton(
-                onClick = { navController.navigate("settings") },
-                modifier = Modifier.size(100.dp)
-            ){
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Settings",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(70.dp).background(MaterialTheme.colorScheme.primary)
-                )
-            }
+            Image(
+                painter = painterResource(id = R.drawable.user),
+                contentDescription = "Settings",
+                modifier = Modifier
+                    .size(100.dp)
+                    .clickable { navController.navigate("settings") }
+            )
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
         //Calender
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -206,7 +204,7 @@ fun HomeScreen(navController: NavController,name: String?) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(20.dp)
             ){
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -233,12 +231,14 @@ fun HomeScreen(navController: NavController,name: String?) {
                     target = task1Target,
                     onProgress = { navController.navigate("workout") }
                 )
+                Spacer(Modifier.height(12.dp))
                 TaskRowWithProgress(
                     task = todayTasks[1].label,
                     current = task2Progress,
                     target = task2Target,
                     onProgress = { navController.navigate("workout") }
                 )
+                Spacer(Modifier.height(12.dp))
                 TaskRowWithProgress(
                     task = todayTasks[2].label,
                     current = task3Progress,
@@ -293,7 +293,7 @@ fun DayChip(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(width = 56.dp, height = 56.dp)
+                .size(width = 56.dp, height = 60.dp)
                 .clip(chipShape)
                 .background(bgColor)
                 // Border applied AFTER clip and background so it draws on top
@@ -369,13 +369,4 @@ private fun dayRangeMillis(): Pair<Long, Long> {
     calendar.add(Calendar.MILLISECOND, -1)
     val endOfDay = calendar.timeInMillis
     return startOfDay to endOfDay
-}
-
-@Preview(showBackground = true)
-@Composable
-fun previewScreen(){
-    VitalLogTheme {
-        HomeScreen(navController = NavController(LocalContext.current), name = String())
-
-    }
 }
