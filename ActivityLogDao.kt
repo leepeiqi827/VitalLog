@@ -29,9 +29,6 @@ interface ActivityLogDao {
     @Query("SELECT SUM(durationMinutes) FROM activity_logs")
     suspend fun getTotalMinutes(): Int?
 
-    @Query("DELETE FROM activity_logs WHERE id = :id")
-    suspend fun deleteLogById(id: String)
-
     @Delete
     suspend fun deleteLog(log: ActivityLogEntity)
 }
