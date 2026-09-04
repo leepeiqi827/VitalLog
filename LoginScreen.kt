@@ -80,7 +80,7 @@ fun LoginScreen(navController: NavHostController) {
 
         Button(
             onClick = {
-                // 登录成功后跳转到 home，并清除返回栈，防止用户按返回键回到登录页
+
                 navController.navigate("home") {
                     popUpTo("login") { inclusive = true }
                 }
@@ -110,7 +110,7 @@ fun ForgetPswd(navController: NavHostController) {
         )
 
         Button(
-            onClick = { navController.popBackStack() }, // 发送后直接返回登录页
+            onClick = { navController.popBackStack() },
             modifier = Modifier.padding(16.dp)
         ) {
             Text(text = "Send")
