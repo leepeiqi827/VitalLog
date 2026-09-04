@@ -51,14 +51,17 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
     Scaffold(
         bottomBar = {
-            if (currentRoute in listOf("home", "calories", "workout", "moodTrack", "meditation")) {
+
+            if (currentRoute?.startsWith("home") == true || currentRoute in listOf("calories", "workout", "meditation")) {
                 NavigationBar {
                     NavigationBarItem(
                         icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
                         label = { Text("Home") },
-                        selected = currentRoute == "home",
+                        selected = currentRoute?.startsWith("home") == true,
                         onClick = {
-                            navController.navigate("home") {
+                            // Extract current name or default to "User" when clicking Home tab
+                            val currentName = currentRoute?.substringAfter("home/") ?: "User"
+                            navController.navigate("home/$currentName") {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                             }
@@ -121,18 +124,30 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             composable(route = "first") {
                 FirstScreens(navController)
             }
+
+
             composable(route = "login") {
                 LoginScreen(navController)
             }
+
+
             composable(route = "forget") {
                 ForgetPswd(navController)
             }
-            composable("home") {
-                HomeScreen(navController)
+
+
+            composable(
+                route = "home/{name}",
+                arguments = listOf(navArgument("name") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val name = backStackEntry.arguments?.getString("name") ?: "User"
+                HomeScreen(navController, name = name)
             }
+
             composable("calories") {
                 CaloriesDashboardScreen(navController)
             }
+
             composable("workout") {
                 WorkoutScreen(
                     onBack = { navController.popBackStack() },
@@ -140,6 +155,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     onLogWorkout = { workoutType -> navController.navigate("logging/$workoutType") }
                 )
             }
+
             composable(
                 route = "logging/{workoutType}",
                 arguments = listOf(navArgument(name = "workoutType") { type = NavType.StringType })
@@ -166,9 +182,11 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     }
                 )
             }
+
             composable("meditation") {
                 MeditationScreen()
             }
+
             composable("settings") {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
@@ -183,18 +201,23 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     }
                 )
             }
+
             composable("account_security") {
                 AccountSecurityScreen(onBack = { navController.popBackStack() })
             }
+
             composable("help_support") {
                 HelpSupportScreen(onBack = { navController.popBackStack() })
             }
+
             composable("mood_history") {
                 MoodHistoryScreen(navController)
             }
+
             composable("calendar") {
                 CalendarScreen(navController)
             }
+
             composable(route = "activity_logs") {
                 val context = LocalContext.current
                 val dao = remember { AppDatabase.getInstance(context).activityLogDao() }
@@ -205,6 +228,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     logs = logs
                 )
             }
+
             composable("calories_history") {
                 CaloriesHistoryScreen(navController)
             }
