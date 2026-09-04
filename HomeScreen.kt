@@ -57,7 +57,7 @@ data class DayItem(
     val dayNumber: String,
     val status: DayStatus
 )
-enum class DayStatus { MISSED, LOGGED, TODAY, UPCOMING }
+enum class HomeDayStatus { MISSED, COMPLETED, TODAY, UPCOMING }
 
 data class DailyTaskDef(val workoutType: String, val targetMinutes: Int) {
     val label: String get() = "$workoutType • $targetMinutes mins"
@@ -73,13 +73,15 @@ private val allTaskDefs = listOf(
 )
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController,name: String?) {
 
+    val lightBg = Color(0xFFE8F5E9)
     val darkGreen = Color(0xFF2E7D32)
     val cardBg = Color(0xFFC8E6C9)
     val missedGrey = Color(0xFFA0AAB2)
     val loggedGreen = Color(0xFF388E3C)
 
+    //Daily Task - which 3 tasks show today, stable per-day via a date-seeded shuffle
     val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
     val seed = today.hashCode()
     val random = Random(seed.toLong())
@@ -87,6 +89,7 @@ fun HomeScreen(navController: NavController) {
         allTaskDefs.shuffled(random).take(3)
     }
 
+    // Real workout logs from today - progress is derived from these, not from taps.
     val context = LocalContext.current
     val dao = remember { AppDatabase.getInstance(context).activityLogDao() }
     val (dayStart, dayEnd) = remember(today) { dayRangeMillis() }
@@ -141,7 +144,7 @@ fun HomeScreen(navController: NavController) {
             verticalAlignment = Alignment.CenterVertically
         ){
             Text(
-                text = "Good morning, \nSarah!",
+                text = "Good morning,$name",
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
@@ -159,7 +162,6 @@ fun HomeScreen(navController: NavController) {
             }
         }
         Spacer(Modifier.height(16.dp))
-        
         //Calender
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -194,7 +196,6 @@ fun HomeScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(28.dp))
-        
         //Daily task
         Card(
             modifier = Modifier
@@ -295,6 +296,7 @@ fun DayChip(
                 .size(width = 56.dp, height = 56.dp)
                 .clip(chipShape)
                 .background(bgColor)
+                // Border applied AFTER clip and background so it draws on top
                 .then(
                     if (dayItem.status == DayStatus.TODAY) {
                         Modifier.border(width = 2.dp, color = darkGreen, shape = chipShape)
@@ -355,6 +357,7 @@ fun TaskRowWithProgress(
     }
 }
 
+/** Start/end epoch millis of the current local day, used to filter today's activity logs. */
 private fun dayRangeMillis(): Pair<Long, Long> {
     val calendar = Calendar.getInstance()
     calendar.set(Calendar.HOUR_OF_DAY, 0)
@@ -372,7 +375,7 @@ private fun dayRangeMillis(): Pair<Long, Long> {
 @Composable
 fun previewScreen(){
     VitalLogTheme {
-        HomeScreen(navController = NavController(LocalContext.current))
+        HomeScreen(navController = NavController(LocalContext.current), name = String())
 
     }
 }
