@@ -220,12 +220,19 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
             composable(route = "activity_logs") {
                 val context = LocalContext.current
-                val dao = remember { AppDatabase.getInstance(context).activityLogDao() }
-                val logs by dao.getAllLogs().collectAsState(initial = emptyList())
+                val scope = rememberCoroutineScope()
+                val repository = remember {
+                    ActivityLogRepository(
+                        AppDatabase.getInstance(context).activityLogDao(),
+                        com.example.vitallog.data.repository.CaloriesRepository(context)
+                    )
+                }
+                val logs by repository.getAllLogs().collectAsState(initial = emptyList())
 
                 ActivityLogsScreen(
                     onBack = { navController.popBackStack() },
-                    logs = logs
+                    logs = logs,
+                    onDeleteLog = { log -> scope.launch { repository.deleteLog(log) } }
                 )
             }
 
