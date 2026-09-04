@@ -2,6 +2,8 @@
 package com.example.vitallog.screen
 
 
+import android.R.attr.description
+import android.R.attr.duration
 import android.media.MediaPlayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -327,22 +329,24 @@ fun HistoryTaskItem(task: MeditationTask, onDeleteClick: () -> Unit) {
     }
 }
 enum class NatureSound(val title: String, val url: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    RAIN(
-        "Rain Sounds",
+    S1(
+        "Sounds 1",
         "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
-        Icons.Filled.Cloud  // Cloud icon for rain
+        Icons.Filled.MusicNote
     ),
-    OCEAN(
-        "Ocean Waves",
+    S2(
+        "Sound 2",
         "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        Icons.Filled.WaterDrop  // WaterDrop for ocean
+        Icons.Filled.MusicNote
     ),
-    BIRDS(
-        "Bird Chirping",
+    S3(
+        "Sound 3",
         "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        Icons.Filled.Pets  // Pets icon for birds
+        Icons.Filled.MusicNote
     )
+
 }
+
 
 @Composable
 fun MeditationPlayerScreen(
@@ -357,11 +361,11 @@ fun MeditationPlayerScreen(
     var mediaPlayer: MediaPlayer? by remember { mutableStateOf(null) }
     var isAudioReady by remember { mutableStateOf(false) }
 
-    // ✅ NEW: State for selected sound and dialog visibility
-    var selectedSound by remember { mutableStateOf(NatureSound.RAIN) }
+
+    var selectedSound by remember { mutableStateOf(NatureSound.S1) }
     var showSoundDialog by remember { mutableStateOf(false) }
 
-    // ✅ UPDATED: LaunchedEffect now depends on selectedSound.url
+
     LaunchedEffect(context, selectedSound.url) {
         // Release old player if it exists
         mediaPlayer?.release()
