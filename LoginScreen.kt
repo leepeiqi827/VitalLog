@@ -24,11 +24,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.vitallog.R
+
+@Composable
+fun FirstScreens(navController: NavHostController) {
+    Column(
+        modifier = Modifier.fillMaxSize().background(Color(0xFFDEF6DA)).padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.images),
+            contentDescription = "heard",
+            modifier = Modifier.size(160.dp)
+        )
+        Text(
+            text = "Good Health and Well-Being",
+            modifier = Modifier.padding(16.dp),
+            color = Color.Black,
+            fontWeight = FontWeight.Bold
+        )
+        Button(
+            onClick = { navController.navigate("login") },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(text = "Continue")
+        }
+    }
+}
 
 @Composable
 fun LoginScreen(navController: NavHostController) {
