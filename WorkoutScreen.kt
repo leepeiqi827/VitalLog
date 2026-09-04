@@ -45,16 +45,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vitallog.R
+import com.example.vitallog.util.CalorieCalculator
 
 data class WorkoutOption(val label:String, val emoji: String)
-private val workoutOptions = listOf(
-    WorkoutOption("Cycling", "🚴"),
-    WorkoutOption("Swim", "🏊"),
-    WorkoutOption("Yoga", "🧘"),
-    WorkoutOption("Weighing", "⚖️"),
-    WorkoutOption("Jogging", "🏃"),
-    WorkoutOption("Skipping", "🤸")
-)
+
+// Define workout options using CalorieCalculator.SUPPORTED_WORKOUT_TYPES to ensure
+// both WorkoutScreen and CalorieCalculator stay in sync
+private val workoutOptions = CalorieCalculator.SUPPORTED_WORKOUT_TYPES.map { type ->
+    when (type) {
+        "Cycling" -> WorkoutOption("Cycling", "🚴")
+        "Swim" -> WorkoutOption("Swim", "🏊")
+        "Yoga" -> WorkoutOption("Yoga", "🧘")
+        "Weighing" -> WorkoutOption("Weighing", "⚖️")
+        "Jogging" -> WorkoutOption("Jogging", "🏃")
+        "Skipping" -> WorkoutOption("Skipping", "🤸")
+        else -> WorkoutOption(type, "💪") // Fallback emoji for future types
+    }
+}
+
 @Composable
 fun WorkoutScreen(
     onBack:() -> Unit,
