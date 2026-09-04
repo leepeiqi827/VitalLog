@@ -115,9 +115,12 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "login",
+            startDestination = "first",
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(route = "first") {
+                FirstScreens(navController)
+            }
             composable(route = "login") {
                 LoginScreen(navController)
             }
