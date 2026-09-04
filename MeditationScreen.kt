@@ -123,7 +123,7 @@ fun MeditationScreen(){
 @Composable
 fun FirstScreen(navController: androidx.navigation.NavController) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Dashboard") }) }
+        topBar = { TopAppBar(title = { Text("Meditation Task Management System") }) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
