@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.vitallog.screen
 
+
 import android.media.MediaPlayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.Pets
+
 
 
 import androidx.compose.ui.text.input.KeyboardType
@@ -322,6 +326,23 @@ fun HistoryTaskItem(task: MeditationTask, onDeleteClick: () -> Unit) {
         }
     }
 }
+enum class NatureSound(val title: String, val url: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    RAIN(
+        "Rain Sounds",
+        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+        Icons.Filled.Cloud  // Cloud icon for rain
+    ),
+    OCEAN(
+        "Ocean Waves",
+        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        Icons.Filled.WaterDrop  // WaterDrop for ocean
+    ),
+    BIRDS(
+        "Bird Chirping",
+        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        Icons.Filled.Pets  // Pets icon for birds
+    )
+}
 
 @Composable
 fun MeditationPlayerScreen(
@@ -336,11 +357,16 @@ fun MeditationPlayerScreen(
     var mediaPlayer: MediaPlayer? by remember { mutableStateOf(null) }
     var isAudioReady by remember { mutableStateOf(false) }
 
-    val rainSoundUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+    // ✅ NEW: State for selected sound and dialog visibility
+    var selectedSound by remember { mutableStateOf(NatureSound.RAIN) }
+    var showSoundDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(context) {
+    // ✅ UPDATED: LaunchedEffect now depends on selectedSound.url
+    LaunchedEffect(context, selectedSound.url) {
+        // Release old player if it exists
+        mediaPlayer?.release()
+
         mediaPlayer = MediaPlayer().apply {
-            // Fixed: Use modern API instead of deprecated setAudioStreamType
             setAudioAttributes(
                 android.media.AudioAttributes.Builder()
                     .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -348,19 +374,20 @@ fun MeditationPlayerScreen(
                     .build()
             )
             try {
-                // Fixed: Use KTX extension toUri() instead of Uri.parse()
-                setDataSource(context, rainSoundUrl.toUri())
-                isLooping = true // Fixed: Use property access syntax
+                setDataSource(context, selectedSound.url.toUri())
+                isLooping = true
                 setVolume(volume, volume)
                 prepareAsync()
                 setOnPreparedListener {
                     isAudioReady = true
+                    // If it was playing before the sound changed, resume playing
+                    if (isPlaying) start()
                 }
                 setOnErrorListener { _, _, _ ->
                     isAudioReady = false
                     true
                 }
-            } catch (_: Exception) { // Fixed: Use _ for unused parameter
+            } catch (_: Exception) {
                 isAudioReady = false
             }
         }
@@ -421,8 +448,11 @@ fun MeditationPlayerScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ✅ UPDATED: Card is now clickable and shows the selected sound's icon/name
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showSoundDialog = true }, // ✅ Makes the card clickable
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Row(
@@ -430,18 +460,26 @@ fun MeditationPlayerScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Default.MusicNote,
+                        imageVector = selectedSound.icon, // ✅ Dynamic icon
                         contentDescription = "Music",
                         modifier = Modifier.size(32.dp),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(text = "Rain & Nature Sounds", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = selectedSound.title, // ✅ Dynamic title
+                            style = MaterialTheme.typography.titleMedium
+                        )
                         Text(
                             text = if (isAudioReady) "Ready to play" else "Loading...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = "Tap to change sound", // ✅ Hint for the user
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -467,6 +505,7 @@ fun MeditationPlayerScreen(
                 value = currentSeconds.toFloat(),
                 onValueChange = { newProgress ->
                     currentSeconds = newProgress.toInt()
+                    mediaPlayer?.seekTo((newProgress * 1000).toInt())
                 },
                 valueRange = 0f..totalSeconds.toFloat(),
                 modifier = Modifier.fillMaxWidth()
@@ -538,8 +577,61 @@ fun MeditationPlayerScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-}
 
+    // ✅ NEW: Sound Selection Dialog
+    if (showSoundDialog) {
+        AlertDialog(
+            onDismissRequest = { showSoundDialog = false },
+            title = { Text("Select Nature Sound") },
+            text = {
+                Column {
+                    NatureSound.entries.forEach { sound ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedSound = sound
+                                    showSoundDialog = false
+                                    // Reset playback state when changing sounds
+                                    isPlaying = false
+                                    currentSeconds = 0
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = sound.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = if (selectedSound == sound) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = sound.title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (selectedSound == sound) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                            if (selectedSound == sound) {
+                                Spacer(modifier = Modifier.weight(1f))
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSoundDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+}
 // Fixed: Use Locale.US to avoid implicit default locale
 private fun formatTime(seconds: Int): String {
     val mins = seconds / 60
@@ -567,7 +659,17 @@ fun AddEditTaskDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(value = description, onValueChange = { description = it; error = null }, label = { Text("Description (Optional)") }, maxLines = 3, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = duration, onValueChange = { if (it.all { c -> c.isDigit() } || it.isEmpty()) { duration = it; error = null } }, label = { Text("Duration (minutes)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = duration, onValueChange = { if (it.all { c -> c.isDigit() } || it.isEmpty()) { duration = it; error = null } },
+                    label = { Text("Duration (minutes)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ))
                 if (error != null) { Text(text = error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
             }
         },
@@ -576,8 +678,8 @@ fun AddEditTaskDialog(
                 if (title.isBlank()) { error = "Title cannot be empty" }
                 else if (duration.isBlank() || duration.toIntOrNull() == null || duration.toInt() <= 0) { error = "Enter a valid duration" }
                 else { onConfirm(title, description, duration.toInt()) }
-            }) { Text("Save") }
+            }) { Text("Save",color = MaterialTheme.colorScheme.onPrimary ) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel",  color = MaterialTheme.colorScheme.onSurfaceVariant ) } }
     )
 }
