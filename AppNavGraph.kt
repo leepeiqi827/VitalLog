@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import com.example.vitallog.data.AuthManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +50,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
     val currentRoute = navBackStackEntry?.destination?.route
     var showMoodSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         bottomBar = {
@@ -59,10 +62,8 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                         label = { Text("Home") },
                         selected = currentRoute?.startsWith("home") == true,
                         onClick = {
-                            // Extract current name or default to "User" when clicking Home tab
                             val currentName = currentRoute?.substringAfter("home/") ?: "User"
                             navController.navigate("home/$currentName") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                             }
                         }
@@ -73,7 +74,6 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                         selected = currentRoute == "calories",
                         onClick = {
                             navController.navigate("calories") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                             }
                         }
@@ -90,7 +90,6 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                         selected = currentRoute == "workout",
                         onClick = {
                             navController.navigate("workout") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                             }
                         }
@@ -107,7 +106,6 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                         selected = currentRoute == "meditation",
                         onClick = {
                             navController.navigate("meditation") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                             }
                         }
@@ -129,7 +127,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             composable(route = "login") {
                 LoginScreen(navController)
             }
-
+            composable("register")
+            {
+                RegisterScreen(navController)
+            }
 
             composable(route = "forget") {
                 ForgetPswd(navController)
@@ -150,7 +151,15 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
             composable("workout") {
                 WorkoutScreen(
-                    onBack = { navController.popBackStack() },
+                    onBack = {
+                        // This arrow represents leaving the Workout section, so return
+                        // to Home rather than whichever bottom-tab page was visited last.
+                        if (!navController.popBackStack("home/{name}", inclusive = false)) {
+                            navController.navigate("home/User") {
+                                launchSingleTop = true
+                            }
+                        }
+                    },
                     onLogs = { navController.navigate("activity_logs") },
                     onLogWorkout = { workoutType -> navController.navigate("logging/$workoutType") }
                 )
@@ -195,6 +204,9 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     onMoodHistory = { navController.navigate("mood_history") },
                     onCalendar = { navController.navigate("calendar") },
                     onLogOut = {
+                        scope.launch {
+                            AuthManager.signOut()
+                        }
                         navController.navigate("login") {
                             popUpTo(0)
                         }
@@ -211,6 +223,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             }
 
             composable("mood_history") {
+                LaunchedEffect(Unit) { MoodData.syncFromCloud() }
                 MoodHistoryScreen(navController)
             }
 
@@ -228,6 +241,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     )
                 }
                 val logs by repository.getAllLogs().collectAsState(initial = emptyList())
+                LaunchedEffect(repository) { repository.syncFromCloud() }
 
                 ActivityLogsScreen(
                     onBack = { navController.popBackStack() },
@@ -250,8 +264,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             ) {
                 MoodTrackScreen(
                     onSaveAndTrack = { mood, note ->
-                        MoodData.addMood(mood, note)
-                        showMoodSheet = false
+                        scope.launch {
+                            MoodData.addMood(mood, note)
+                            showMoodSheet = false
+                        }
                     }
                 )
             }
