@@ -56,6 +56,9 @@ class CaloriesViewModel(
         loadHistory()
         loadWeeklyData()
         loadTodaysActivityLogs()
+        // The dashboard is created after the anonymous Supabase session starts.
+        // Pull the user's cloud entries immediately instead of requiring a button tap.
+        syncFromCloud()
     }
 
     fun loadTodaysActivityLogs(){
@@ -169,11 +172,11 @@ class CaloriesViewModel(
             _weeklyLabels.value = labels
             _weeklyTotal.value = total
         }else{
-            val dummyData = listOf(2191,2586,1488,3460,1473,2430,4000)
-            val dummyLabels = listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+            val dummyData = emptyList<Int>()
+            val dummyLabels = emptyList<String>()
             _weeklyData.value = dummyData
             _weeklyLabels.value = dummyLabels
-            _weeklyTotal.value = dummyData.sum()
+            _weeklyTotal.value = 0
         }
     }
 
@@ -200,7 +203,7 @@ class CaloriesViewModel(
     fun resetTarget(){
         viewModelScope.launch {
             val today = getToday()
-            repository.deleteByDateLocal(today)
+            repository.deleteFromCloud(today)
             _target.value = null
             loadWeeklyData()
         }

@@ -1,12 +1,14 @@
 package com.example.vitallog.data.repository
 
 import com.example.vitallog.data.dao.ActivityLogDao
+import com.example.vitallog.data.AuthManager
 import com.example.vitallog.model.ActivityLogEntity
 import com.example.vitallog.data.remote.SupabaseClientProvider
 import com.example.vitallog.util.CalorieCalculator
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import java.time.Instant
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -15,11 +17,13 @@ import java.util.UUID
 @Serializable
 data class ActivityLogDto(
     val id: String,
+    val user_id: String,
     val workout_type: String,
     val duration_minutes: Int,
     val intensity: String,
     val weight_kg: Double,
-    val notes: String?
+    val notes: String?,
+    val created_at: String? = null
 )
 
 class ActivityLogRepository(
@@ -59,22 +63,27 @@ class ActivityLogRepository(
             )
         )
 
-        // Cloud sync is best-effort: if this throws (e.g. no auth session / no network),
-        // it must NOT stop the calories rollup below, otherwise the dashboard/bar chart
-        // never learns about this workout even though it was saved locally.
-        try {
-            SupabaseClientProvider.client.from("activity_logs").insert(
-                ActivityLogDto(
-                    id = id,
-                    workout_type = workoutType,
-                    duration_minutes = durationMinutes,
-                    intensity = intensity,
-                    weight_kg = weightKg,
-                    notes = notes
+        // The normal Supabase RLS policy requires user_id to match auth.uid().
+        // Previously it was omitted, so the server rejected the insert while the
+        // local Room row still made the app look as though it had saved successfully.
+        if (AuthManager.isSignedIn()) {
+            try {
+                SupabaseClientProvider.client.from("activity_logs").insert(
+                    ActivityLogDto(
+                        id = id,
+                        user_id = AuthManager.getCurrentUser()!!.id,
+                        workout_type = workoutType,
+                        duration_minutes = durationMinutes,
+                        intensity = intensity,
+                        weight_kg = weightKg,
+                        notes = notes
+                    )
                 )
-            )
-        } catch (e: Exception) {
-            android.util.Log.e("ActivityLogRepository", "Cloud sync failed for activity log", e)
+            } catch (e: Exception) {
+                android.util.Log.e("ActivityLogRepository", "Cloud sync failed for activity log", e)
+            }
+        } else {
+            android.util.Log.w("ActivityLogRepository", "Cloud sync skipped: no Supabase Auth session")
         }
 
         // Roll this workout's calories into today's Calories Dashboard total so
@@ -86,6 +95,7 @@ class ActivityLogRepository(
         dao.deleteLog(log)
         // Best -effort cloud delete - same as saveLog's cloud sync
         // must not block the local delete if network/auth is unavailable
+        if (!AuthManager.isSignedIn()) return
         try{
             SupabaseClientProvider.client.from("activity_logs")
                 .delete{
@@ -97,6 +107,39 @@ class ActivityLogRepository(
             android.util.Log.e("ActivityLogRepository", "Cloud delete failed for activity log", e)
         }
         caloriesRepository?.subtractBurnedCalories(dateKeyFor(log.createdAt), log.caloriesBurned)
+    }
+
+    /** Downloads this anonymous/authenticated user's cloud logs into Room. */
+    suspend fun syncFromCloud() {
+        val user = AuthManager.getCurrentUser() ?: return
+        try {
+            val remoteLogs = SupabaseClientProvider.client.from("activity_logs")
+                .select {
+                    filter { eq("user_id", user.id) }
+                }
+                .decodeList<ActivityLogDto>()
+            remoteLogs.forEach { log ->
+                val createdAt = log.created_at?.let {
+                    runCatching { Instant.parse(it).toEpochMilli() }.getOrNull()
+                } ?: System.currentTimeMillis()
+                dao.insertLog(
+                    ActivityLogEntity(
+                        id = log.id,
+                        workoutType = log.workout_type,
+                        durationMinutes = log.duration_minutes,
+                        intensity = log.intensity,
+                        weightKg = log.weight_kg,
+                        notes = log.notes,
+                        createdAt = createdAt,
+                        caloriesBurned = CalorieCalculator.estimateCalories(
+                            log.workout_type, log.duration_minutes, log.intensity, log.weight_kg
+                        )
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ActivityLogRepository", "Cloud download failed for activity logs", e)
+        }
     }
     private fun dateKeyFor(millis: Long): String =
         SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(millis))

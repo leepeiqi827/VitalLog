@@ -70,9 +70,9 @@ fun CaloriesDashboardScreen(
     val todaysActivityLogs by vm.todaysActivityLogs.collectAsStateWithLifecycle()
 
     val progress = vm.getProgress()
-    val displayData = if(weeklyData.isNotEmpty()) weeklyData else listOf(2191,1488,2586,3460,1473,2430,4000)
-    val displayLabels = if(weeklyLabels.isNotEmpty()) weeklyLabels else listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
-    val displayTotal = if(weeklyTotal > 0) weeklyTotal else displayData.sum()
+    val displayData = weeklyData
+    val displayLabels = weeklyLabels
+    val displayTotal = weeklyTotal
 
     if(isLoading){
         Box(

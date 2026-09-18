@@ -1,5 +1,6 @@
 package com.example.vitallog.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +49,7 @@ fun CaloriesHistoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFDEF6DA))
             .padding(16.dp)
     ){
         Row(verticalAlignment = Alignment.CenterVertically){
@@ -83,6 +85,7 @@ fun CaloriesHistoryScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .background(Color.White)
                                 .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically

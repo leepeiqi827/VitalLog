@@ -6,7 +6,7 @@ package com.example.vitallog.util
  * weight, workout duration, and self-reported intensity.
  *
  * Formula: calories = MET x weight(kg) x duration(hours) x intensityFactor
- * 
+ *
  * NOTE: Workout types must be defined in SUPPORTED_WORKOUT_TYPES to ensure
  * they map correctly to MET values. New workout types should be added there first
  * to avoid silent fallback to DEFAULT_MET.
@@ -50,7 +50,7 @@ object CalorieCalculator {
             android.util.Log.w(
                 "CalorieCalculator",
                 "Unknown workout type: '$workoutType', using DEFAULT_MET = $DEFAULT_MET. " +
-                "Supported types: $SUPPORTED_WORKOUT_TYPES"
+                        "Supported types: $SUPPORTED_WORKOUT_TYPES"
             )
             DEFAULT_MET
         }

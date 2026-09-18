@@ -127,10 +127,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             composable(route = "login") {
                 LoginScreen(navController)
             }
-            composable("register")
-            {
-                RegisterScreen(navController)
-            }
+
 
             composable(route = "forget") {
                 ForgetPswd(navController)

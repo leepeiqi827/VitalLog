@@ -3,6 +3,7 @@ package com.example.vitallog.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,9 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.vitallog.R
 
 @Composable
 fun MoodTrackScreen(
@@ -25,22 +28,22 @@ fun MoodTrackScreen(
     // Step state: 1 = Mood Selector, 2 = Note Entry
     var currentStep by remember { mutableIntStateOf(1) }
     var selectedMood by remember { mutableStateOf("") }
-    var selectedEmoji by remember { mutableStateOf("") }
+    var selectedImage by remember { mutableIntStateOf(0) }
     var noteText by remember { mutableStateOf("") }
 
     if (currentStep == 1) {
         MoodSelectionStep(
             selectedMood = selectedMood,
-            onMoodSelected = { mood, emoji ->
+            onMoodSelected = { mood, imageRes ->
                 selectedMood = mood
-                selectedEmoji = emoji
+                selectedImage = imageRes
             },
             onNextStep = { currentStep = 2 }
         )
     } else {
         MoodNoteStep(
             selectedMood = selectedMood,
-            selectedEmoji = selectedEmoji,
+            selectedImage = selectedImage,
             noteText = noteText,
             onNoteChanged = { noteText = it },
             onBack = { currentStep = 1 },
@@ -53,17 +56,17 @@ fun MoodTrackScreen(
 @Composable
 private fun MoodSelectionStep(
     selectedMood: String,
-    onMoodSelected: (String, String) -> Unit,
+    onMoodSelected: (String, Int) -> Unit,
     onNextStep: () -> Unit
 ) {
     val moodsRow1 = listOf(
-        Triple("Very Happy", "😃", Color(0xFF38A169)),
-        Triple("Happy", "🙂", Color(0xFF38A169)),
-        Triple("Neutral", "😐", Color(0xFF38A169))
+        Pair("Very Happy", R.drawable.very_happy),
+        Pair("Happy", R.drawable.happy),
+        Pair("Neutral", R.drawable.neutral)
     )
     val moodsRow2 = listOf(
-        Triple("Low", "😔", Color(0xFF38A169)),
-        Triple("Sad", "😢", Color(0xFF38A169))
+        Pair("Low", R.drawable.low),
+        Pair("Sad", R.drawable.sad)
     )
 
     Column(
@@ -76,12 +79,12 @@ private fun MoodSelectionStep(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            moodsRow1.forEach { (label, emoji, _) ->
+            moodsRow1.forEach { (label, imageRes) ->
                 MoodItem(
                     label = label,
-                    emoji = emoji,
+                    imageRes = imageRes,
                     isSelected = selectedMood == label,
-                    onClick = { onMoodSelected(label, emoji) }
+                    onClick = { onMoodSelected(label, imageRes) }
                 )
             }
         }
@@ -92,12 +95,12 @@ private fun MoodSelectionStep(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
-            moodsRow2.forEach { (label, emoji, _) ->
+            moodsRow2.forEach { (label, imageRes) ->
                 MoodItem(
                     label = label,
-                    emoji = emoji,
+                    imageRes = imageRes,
                     isSelected = selectedMood == label,
-                    onClick = { onMoodSelected(label, emoji) }
+                    onClick = { onMoodSelected(label, imageRes) }
                 )
                 Spacer(modifier = Modifier.width(24.dp))
             }
@@ -128,7 +131,7 @@ private fun MoodSelectionStep(
 @Composable
 private fun MoodNoteStep(
     selectedMood: String,
-    selectedEmoji: String,
+    selectedImage: Int,
     noteText: String,
     onNoteChanged: (String) -> Unit,
     onBack: () -> Unit,
@@ -173,7 +176,13 @@ private fun MoodNoteStep(
                 .background(Color(0xFF48BB78)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = selectedEmoji, fontSize = 54.sp)
+            if (selectedImage != 0) {
+                Image(
+                    painter = painterResource(selectedImage),
+                    contentDescription = selectedMood,
+                    modifier = Modifier.size(92.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -234,7 +243,7 @@ private fun MoodNoteStep(
 @Composable
 fun MoodItem(
     label: String,
-    emoji: String,
+    imageRes: Int,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -254,7 +263,11 @@ fun MoodItem(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = emoji, fontSize = 32.sp)
+            Image(
+                painter = painterResource(imageRes),
+                contentDescription = label,
+                modifier = Modifier.size(62.dp)
+            )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(

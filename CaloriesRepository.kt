@@ -2,6 +2,7 @@ package com.example.vitallog.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.example.vitallog.data.AuthManager
 import com.example.vitallog.data.dao.CaloriesDao
 import com.example.vitallog.data.database.AppDatabase
 import com.example.vitallog.data.remote.SupabaseClientProvider
@@ -26,7 +27,7 @@ class CaloriesRepository(private val context: Context) {
     // Until you add a sign-in flow, this stays false and cloud calls are skipped
     // instead of crashing against your RLS policy (auth.uid() = user_id).
     private fun isSignedIn(): Boolean {
-        return supabase.auth.currentUserOrNull() != null
+        return AuthManager.isSignedIn()
     }
 
     // Room (local cache) — unchanged
